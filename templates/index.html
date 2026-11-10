@@ -30,4 +30,49 @@
   {% if form_error %}<p class="form-error">{{ form_error }}</p>{% endif %}
   <button type="submit">Calculate</button>
 </form>
+
+{% if result %}
+<section class="result">
+  <div class="badges">
+    <span class="badge region-{{ result.region.name }}">REGION: {{ result.region.name|upper }}</span>
+    <span class="badge {{ 'crosscheck-ok' if result.comparison.match else 'crosscheck-bad' }}">
+      Cross-check: {{ 'MATCH' if result.comparison.match else 'MISMATCH' }}
+    </span>
+  </div>
+
+  {% if result.region.warning %}
+  <p class="warning">{{ result.region.warning }}</p>
+  {% endif %}
+
+  {% if not result.comparison.match %}
+  <p class="warning crosscheck-bad">
+    Independent calculation disagrees on: {{ result.comparison.mismatches|join(', ') }}.
+  </p>
+  {% endif %}
+
+  <table>
+    <thead>
+      <tr>
+        <th>Quantity</th>
+        <th>Analytical (Thévenin)</th>
+        <th>Independent (Nodal)</th>
+        <th>|Δ|</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in result.rows %}
+      <tr>
+        <td>{{ row.symbol }}</td>
+        <td>{{ row.analytical }}</td>
+        <td>{{ row.independent }}</td>
+        <td>{{ row.delta }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="supporting">Supporting: VBB {{ result.vbb }} · RB {{ result.rb }}</p>
+  <p class="supporting">Max relative difference: {{ result.max_error }}</p>
+</section>
+{% endif %}
 {% endblock %}
