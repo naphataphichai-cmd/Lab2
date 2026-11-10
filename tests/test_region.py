@@ -74,3 +74,44 @@ def test_display_point_replaces_only_cutoff():
 
     active = _op(ib=1e-3, vce=5.0)
     assert model.display_point(inputs, active, model.classify(active)) is active
+
+
+from engineering import compare, evaluate, solver
+
+
+def _worked_inputs():
+    return model.BiasInputs(
+        vcc=12.0, r1=47000.0, r2=10000.0, rc=4700.0, re=1000.0,
+        beta=150.0, vbe=0.7,
+    )
+
+
+def test_evaluate_matches_for_worked_example():
+    evaluation = evaluate.evaluate(_worked_inputs())
+    assert evaluation.region.name == model.REGION_ACTIVE
+    assert evaluation.comparison.match is True
+
+
+def test_evaluate_builds_physical_cutoff_result():
+    inputs = model.BiasInputs(
+        vcc=12.0, r1=47000.0, r2=1000.0, rc=4700.0, re=1000.0,
+        beta=150.0, vbe=0.7,
+    )
+    evaluation = evaluate.evaluate(inputs)
+    assert evaluation.region.name == model.REGION_CUTOFF
+    assert evaluation.analytical.ib == 0.0
+    assert evaluation.independent.ib == 0.0
+    assert evaluation.analytical.vb == pytest.approx(model.base_voltage(inputs))
+    assert evaluation.analytical.vce == inputs.vcc
+
+
+def test_evaluate_reports_region_mismatch(monkeypatch):
+    fake = model.OperatingPoint(
+        ib=-1e-3, ic=-1e-1, ie=-1.01e-1, vce=5.0,
+        vb=2.0, ve=1.0, vc=6.0, vbb=2.1, rb=8000.0,
+    )
+    monkeypatch.setattr("engineering.evaluate.solver.solve", lambda inputs: fake)
+    evaluation = evaluate.evaluate(_worked_inputs())
+    assert evaluation.region.name == model.REGION_CUTOFF
+    assert evaluation.comparison.match is False
+    assert "region" in evaluation.comparison.mismatches
