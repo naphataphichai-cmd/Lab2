@@ -1,3 +1,4 @@
+HEAD
 # BJT Common-Emitter DC Bias Calculator
 
 ENG29 2121 lab deliverable. A one-page Flask app that computes the DC operating
@@ -116,3 +117,6 @@ No AC analysis, gain, small-signal model, transient simulation, schematic
 editor, netlist import, FET support, database, authentication, JavaScript, or
 deployment work. `VBE` is a fixed input, not solved from a device model, and
 temperature dependence is out of scope.
+=======
+# Lab2
+>>>>>>> 2e3f3c347be1543a55dbc17660c399dbf3e316bd
