@@ -10,6 +10,7 @@
   --bad: #a32a2a;
   --warn: #8a5a00;
   --chip-bg: #eef4fb;
+  --panel-bg: #f7f9fb;
 }
 
 * { box-sizing: border-box; }
@@ -59,6 +60,7 @@ body {
   border-radius: 6px;
   font-size: 0.82rem;
   font-weight: 600;
+  letter-spacing: 0.02em;
   white-space: nowrap;
 }
 
@@ -87,7 +89,7 @@ body {
   gap: 0.5rem;
   padding: 0.85rem 1rem;
   margin: 0;
-  background: #f7f9fb;
+  background: var(--panel-bg);
   border-bottom: 1px solid var(--line);
   border-top-left-radius: 9px;
   border-top-right-radius: 9px;
@@ -173,7 +175,6 @@ input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .btn-calc:hover { filter: brightness(1.1); }
 
 /* Circuit diagram */
-.circuit .panel-body { flex: 1; display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; }
 .circuit-body { flex: 1; }
 .circuit-diagram {
   position: relative;
