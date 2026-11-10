@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% macro field(name, label, unit, values, errors) %}
+<label class="field">
+  <span class="field-label">{{ label }}</span>
+  <span class="field-input">
+    <input name="{{ name }}" value="{{ values.get(name, '') }}" inputmode="decimal" autocomplete="off">
+    <span class="unit">{{ unit }}</span>
+  </span>
+  {% if errors.get(name) %}<span class="error">{{ errors.get(name) }}</span>{% endif %}
+</label>
+{% endmacro %}
+
+{% block content %}
+<header>
+  <h1>BJT Common-Emitter DC Bias</h1>
+  <p class="course">ENG29 2121 · voltage-divider bias</p>
+</header>
+
+<form method="post" action="/" novalidate>
+  <div class="grid">
+    {{ field("vcc", "VCC", "V", values, errors) }}
+    {{ field("r1", "R1", "Ω", values, errors) }}
+    {{ field("r2", "R2", "Ω", values, errors) }}
+    {{ field("rc", "RC", "Ω", values, errors) }}
+    {{ field("re", "RE", "Ω", values, errors) }}
+    {{ field("beta", "β", "", values, errors) }}
+    {{ field("vbe", "VBE", "V", values, errors) }}
+  </div>
+  {% if form_error %}<p class="form-error">{{ form_error }}</p>{% endif %}
+  <button type="submit">Calculate</button>
+</form>
+{% endblock %}
