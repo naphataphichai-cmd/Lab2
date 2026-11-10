@@ -1,14 +1,14 @@
+import app as app_module
+
+
 def test_get_page_shows_default_form(client):
     response = client.get("/")
     assert response.status_code == 200
     body = response.get_data(as_text=True)
     assert "Lab 02: BJT DC Bias Web App" in body
     assert 'name="vcc"' in body
-    assert 'value="100000"' in body
+    assert 'value="100"' in body
     assert "Calculate" in body
-
-
-import app as app_module
 
 
 def test_valid_post_shows_operating_point(client, valid_form):
@@ -57,7 +57,7 @@ def test_vbe_must_be_below_vcc(client, valid_form):
 
 
 def test_cutoff_is_reported(client, valid_form):
-    form = dict(valid_form, r2="1000")
+    form = dict(valid_form, r2="1")
     response = client.post("/", data=form)
     assert response.status_code == 200
     body = response.get_data(as_text=True)
@@ -67,12 +67,30 @@ def test_cutoff_is_reported(client, valid_form):
 
 
 def test_saturation_is_reported(client, valid_form):
-    form = dict(valid_form, rc="10000")
+    form = dict(valid_form, rc="10")
     response = client.post("/", data=form)
     assert response.status_code == 200
     body = response.get_data(as_text=True)
     assert "Saturation region" in body
     assert "not valid for amplifier use" in body
+
+
+def test_mega_ohm_unit_selection_is_honoured(client, valid_form):
+    form = dict(valid_form, r1="1", r1_unit="MΩ")
+    response = client.post("/", data=form)
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    # 1 MΩ upper divider pulls VBB below VBE, so the transistor must be off
+    assert "Cutoff region" in body
+
+
+def test_ohm_unit_selection_is_honoured(client, valid_form):
+    form = dict(valid_form, r1="100", r1_unit="Ω")
+    response = client.post("/", data=form)
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    # a 100 Ω upper divider drives the transistor deep into saturation
+    assert "Saturation region" in body
 
 
 def test_non_finite_result_is_a_normal_error(client, valid_form, monkeypatch):
@@ -90,6 +108,7 @@ def test_extreme_valid_input_does_not_500(client, valid_form):
         valid_form,
         vcc="100", r1="0.001", r2="0.001", rc="0.001", re="0.001",
         beta="2000", vbe="0",
+        r1_unit="Ω", r2_unit="Ω", rc_unit="Ω", re_unit="Ω",
     )
     response = client.post("/", data=form)
     assert response.status_code == 200

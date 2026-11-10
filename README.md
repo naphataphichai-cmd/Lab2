@@ -1,4 +1,3 @@
-HEAD
 # BJT Common-Emitter DC Bias Calculator
 
 ENG29 2121 lab deliverable. A one-page Flask app that computes the DC operating
@@ -8,7 +7,9 @@ solve.
 
 ## What it does
 
-Enter `VCC, R1, R2, RC, RE, β, VBE`. The app returns:
+Enter `VCC, R1, R2, RC, RE, β, VBE`. Each field carries its own unit selector
+(`Ω` / `kΩ` / `MΩ` for resistors, `V` / `mV` for voltages), so the circuit can
+be entered the way it is drawn on the sheet. The app returns:
 
 - `IB, IC, IE` in µA/mA/A
 - `VCE, VB, VE, VC` in volts
@@ -16,6 +17,10 @@ Enter `VCC, R1, R2, RC, RE, β, VBE`. The app returns:
 - the operating region: `cutoff`, `active`, or `saturation`
 - a field-level validation message for bad input
 - a side-by-side comparison with the independent calculation
+
+The page shows the input form on the left, a schematic of the common-emitter
+stage in the middle with the entered component values, and the operating point
+on the right.
 
 The default example is 12 V, 100 kΩ, 22 kΩ, 2.2 kΩ, 1 kΩ, β = 100, VBE = 0.70 V.
 It gives approximately `IB = 12.3 µA`, `IC = 1.23 mA`, and `VCE = 8.052 V`.
@@ -64,7 +69,9 @@ of `1e-6`; the page shows both columns and the maximum relative difference.
 
 ## Validation
 
-Every field is required and must be finite. Accepted ranges:
+Every field is required and must be finite. The chosen unit is converted to
+ohms and volts at the edge of the app, so the engineering layer only ever sees
+base units. Accepted ranges:
 
 | Field | Range |
 |---|---|
@@ -117,6 +124,3 @@ No AC analysis, gain, small-signal model, transient simulation, schematic
 editor, netlist import, FET support, database, authentication, JavaScript, or
 deployment work. `VBE` is a fixed input, not solved from a device model, and
 temperature dependence is out of scope.
-=======
-# Lab2
->>>>>>> 2e3f3c347be1543a55dbc17660c399dbf3e316bd

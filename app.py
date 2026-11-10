@@ -4,22 +4,51 @@ from engineering import evaluate, format as fmt, validation
 
 DEFAULT_FORM = {
     "vcc": "12",
-    "r1": "100000",
-    "r2": "22000",
-    "rc": "2200",
-    "re": "1000",
+    "r1": "100",
+    "r2": "22",
+    "rc": "2.2",
+    "re": "1.0",
     "beta": "100",
     "vbe": "0.70",
 }
 
+RESISTOR_UNITS = ("Ω", "kΩ", "MΩ")
+VOLTAGE_UNITS = ("V", "mV")
+
+DEFAULT_UNITS = {
+    "vcc": "V",
+    "r1": "kΩ",
+    "r2": "kΩ",
+    "rc": "kΩ",
+    "re": "kΩ",
+    "vbe": "V",
+}
+
+UNIT_SCALE = {
+    "Ω": 1.0,
+    "kΩ": 1e3,
+    "MΩ": 1e6,
+    "V": 1.0,
+    "mV": 1e-3,
+}
+
+UNIT_CHOICES = {
+    "vcc": VOLTAGE_UNITS,
+    "r1": RESISTOR_UNITS,
+    "r2": RESISTOR_UNITS,
+    "rc": RESISTOR_UNITS,
+    "re": RESISTOR_UNITS,
+    "vbe": VOLTAGE_UNITS,
+}
+
 RESULT_ROWS = (
-    ("IB", "ib", "current"),
-    ("IC", "ic", "current"),
-    ("IE", "ie", "current"),
-    ("VCE", "vce", "voltage"),
     ("VB", "vb", "voltage"),
     ("VE", "ve", "voltage"),
     ("VC", "vc", "voltage"),
+    ("VCE", "vce", "voltage"),
+    ("IB", "ib", "current"),
+    ("IC", "ic", "current"),
+    ("IE", "ie", "current"),
 )
 
 FORMATTERS = {
@@ -31,6 +60,37 @@ FORMATTERS = {
 def _with_unit(kind: str, value: float) -> str:
     number, unit = FORMATTERS[kind](value)
     return f"{number} {unit}"
+
+
+def _selected_units(form) -> dict[str, str]:
+    units = {}
+    for field, fallback in DEFAULT_UNITS.items():
+        chosen = form.get(f"{field}_unit", fallback)
+        units[field] = chosen if chosen in UNIT_SCALE else fallback
+    return units
+
+
+def _to_base_units(form, units: dict[str, str]) -> dict[str, str]:
+    """Convert the submitted values to ohms and volts for the engineering layer."""
+    scaled: dict[str, str] = {}
+
+    for field in validation.REQUIRED_FIELDS:
+        raw = form.get(field, "")
+        text = raw.strip() if isinstance(raw, str) else str(raw).strip()
+
+        if not text or field not in UNIT_CHOICES:
+            scaled[field] = text
+            continue
+
+        try:
+            value = float(text) * UNIT_SCALE[units[field]]
+        except (ValueError, OverflowError):
+            scaled[field] = text
+            continue
+
+        scaled[field] = f"{value:.12g}"
+
+    return scaled
 
 
 def _build_view(evaluation: evaluate.Evaluation) -> dict:
@@ -68,6 +128,8 @@ def create_app() -> Flask:
         return render_template(
             "index.html",
             values=DEFAULT_FORM,
+            units=dict(DEFAULT_UNITS),
+            unit_choices=UNIT_CHOICES,
             errors={},
             form_error=None,
             result=None,
@@ -75,12 +137,17 @@ def create_app() -> Flask:
 
     @app.post("/")
     def index_post():
-        inputs, errors = validation.parse_inputs(request.form)
+        units = _selected_units(request.form)
+        inputs, errors = validation.parse_inputs(
+            _to_base_units(request.form, units)
+        )
 
         if errors:
             return render_template(
                 "index.html",
                 values=request.form,
+                units=units,
+                unit_choices=UNIT_CHOICES,
                 errors={error.field: error.message for error in errors},
                 form_error=None,
                 result=None,
@@ -93,6 +160,8 @@ def create_app() -> Flask:
             return render_template(
                 "index.html",
                 values=request.form,
+                units=units,
+                unit_choices=UNIT_CHOICES,
                 errors={},
                 form_error="Inputs are outside the numerically stable range.",
                 result=None,
@@ -101,6 +170,8 @@ def create_app() -> Flask:
         return render_template(
             "index.html",
             values=request.form,
+            units=units,
+            unit_choices=UNIT_CHOICES,
             errors={},
             form_error=None,
             result=result,

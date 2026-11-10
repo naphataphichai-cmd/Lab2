@@ -13,4 +13,15 @@ def client():
 
 @pytest.fixture
 def valid_form():
-    return dict(DEFAULT_FORM)
+    form = dict(DEFAULT_FORM)
+    form.update(
+        {
+            "vcc_unit": "V",
+            "r1_unit": "kΩ",
+            "r2_unit": "kΩ",
+            "rc_unit": "kΩ",
+            "re_unit": "kΩ",
+            "vbe_unit": "V",
+        }
+    )
+    return form
