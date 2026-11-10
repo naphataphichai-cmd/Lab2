@@ -2,7 +2,7 @@ def test_get_page_shows_default_form(client):
     response = client.get("/")
     assert response.status_code == 200
     body = response.get_data(as_text=True)
-    assert "BJT Common-Emitter DC Bias" in body
+    assert "Lab 02: BJT DC Bias Web App" in body
     assert 'name="vcc"' in body
     assert 'value="100000"' in body
     assert "Calculate" in body
@@ -15,7 +15,7 @@ def test_valid_post_shows_operating_point(client, valid_form):
     response = client.post("/", data=valid_form)
     assert response.status_code == 200
     body = response.get_data(as_text=True)
-    assert "REGION: ACTIVE" in body
+    assert "Active region approximation OK" in body
     assert "MATCH" in body
     assert "12.3 µA" in body
     assert "1.23 mA" in body
@@ -61,7 +61,7 @@ def test_cutoff_is_reported(client, valid_form):
     response = client.post("/", data=form)
     assert response.status_code == 200
     body = response.get_data(as_text=True)
-    assert "REGION: CUTOFF" in body
+    assert "Cutoff region" in body
     assert "cutoff" in body.lower()
     assert "0 µA" in body
 
@@ -71,7 +71,7 @@ def test_saturation_is_reported(client, valid_form):
     response = client.post("/", data=form)
     assert response.status_code == 200
     body = response.get_data(as_text=True)
-    assert "REGION: SATURATION" in body
+    assert "Saturation region" in body
     assert "not valid for amplifier use" in body
 
 

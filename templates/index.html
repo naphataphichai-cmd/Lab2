@@ -1,55 +1,136 @@
 {% extends "base.html" %}
 
 {% macro field(name, label, unit, values, errors) %}
-<label class="field">
-  <span class="field-label">{{ label }}</span>
-  <span class="field-input">
+<div class="input-row">
+  <label class="field-label">{{ label }}</label>
+  <div class="field-input">
     <input name="{{ name }}" value="{{ values.get(name, '') }}" inputmode="decimal" autocomplete="off">
     <span class="unit">{{ unit }}</span>
-  </span>
+  </div>
   {% if errors.get(name) %}<span class="error">{{ errors.get(name) }}</span>{% endif %}
-</label>
+</div>
 {% endmacro %}
 
 {% block content %}
-<header>
-  <h1>BJT Common-Emitter DC Bias</h1>
-  <p class="course">ENG29 2121 · voltage-divider bias</p>
+<header class="app-header">
+  <div class="header-chip">💻</div>
+  <div class="header-text">
+    <h1>Lab 02: BJT DC Bias Web App</h1>
+    <div class="course">ENG29 2121 &mdash; Common Emitter (Voltage Divider Bias)</div>
+  </div>
+  <div class="header-badge">Computer Programming for Electrical Engineers</div>
 </header>
 
-<form method="post" action="/" novalidate>
-  <div class="grid">
-    {{ field("vcc", "VCC", "V", values, errors) }}
-    {{ field("r1", "R1", "Ω", values, errors) }}
-    {{ field("r2", "R2", "Ω", values, errors) }}
-    {{ field("rc", "RC", "Ω", values, errors) }}
-    {{ field("re", "RE", "Ω", values, errors) }}
-    {{ field("beta", "β", "", values, errors) }}
-    {{ field("vbe", "VBE", "V", values, errors) }}
-  </div>
-  {% if form_error %}<p class="form-error">{{ form_error }}</p>{% endif %}
-  <button type="submit">Calculate</button>
-</form>
+<div class="lab">
+  <aside class="panel inputs">
+    <h2 class="panel-title"><span class="panel-icon">⚙</span> Input Parameters</h2>
+    <form method="post" action="/" novalidate class="param-form">
+      {{ field("vcc", "VCC (Supply Voltage)", "V", values, errors) }}
+      {{ field("r1", "R1 (Upper Divider)", "kΩ", values, errors) }}
+      {{ field("r2", "R2 (Lower Divider)", "kΩ", values, errors) }}
+      {{ field("rc", "RC (Collector Resistor)", "kΩ", values, errors) }}
+      {{ field("re", "RE (Emitter Resistor)", "kΩ", values, errors) }}
+      {{ field("beta", "β (Current Gain)", "", values, errors) }}
+      {{ field("vbe", "VBE (Base-Emitter Voltage)", "V", values, errors) }}
+      {% if form_error %}<p class="form-error">{{ form_error }}</p>{% endif %}
+      <button type="submit" class="btn-calc">Calculate DC Bias</button>
+    </form>
+  </aside>
+
+  <section class="panel circuit">
+    <h2 class="panel-title"><span class="panel-icon">🔌</span> Circuit: Common-Emitter Amplifier</h2>
+    <div class="circuit-body">
+      <div class="circuit-diagram">
+        <div class="node top-rail"></div>
+        <div class="wire top"></div>
+        <div class="component r1">
+          <span class="label">R1</span>
+          <span class="value">{{ values.r1 if values else '' }} kΩ</span>
+        </div>
+        <div class="component r2">
+          <span class="label">R2</span>
+          <span class="value">{{ values.r2 if values else '' }} kΩ</span>
+        </div>
+        <div class="bjt">
+          <div class="bjt-body"></div>
+          <div class="bjt-label">Q1<br>NPN<br>(β = {{ values.beta if values else '' }})</div>
+        </div>
+        <div class="component rc">
+          <span class="label">RC</span>
+          <span class="value">{{ values.rc if values else '' }} kΩ</span>
+        </div>
+        <div class="component re">
+          <span class="label">RE</span>
+          <span class="value">{{ values.re if values else '' }} kΩ</span>
+        </div>
+        <div class="node bottom-rail"></div>
+        <div class="voltages">
+          <div class="v">VCC = {{ values.vcc if values else '' }} V</div>
+          {% if result %}
+          <div class="v">VE = {{ result.rows[2].independent }}</div>
+          <div class="v">VC = {{ result.rows[6].independent }}</div>
+          {% else %}
+          <div class="v">VE = --</div>
+          <div class="v">VC = --</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel results">
+    <h2 class="panel-title"><span class="panel-icon">📊</span> DC Bias Results</h2>
+    <table class="results-table">
+      <tbody>
+        {% if result %}
+        {% for row in result.rows %}
+        <tr>
+          <td class="qty">{{ row.symbol }}</td>
+          <td class="val">{{ row.independent }}</td>
+          <td class="unit"></td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr><td class="qty">VB</td><td class="val">--</td><td class="unit">V</td></tr>
+        <tr><td class="qty">VE</td><td class="val">--</td><td class="unit">V</td></tr>
+        <tr><td class="qty">VC</td><td class="val">--</td><td class="unit">V</td></tr>
+        <tr><td class="qty">VCE</td><td class="val">--</td><td class="unit">V</td></tr>
+        <tr><td class="qty">IB</td><td class="val">--</td><td class="unit">A</td></tr>
+        <tr><td class="qty">IC</td><td class="val">--</td><td class="unit">A</td></tr>
+        <tr><td class="qty">IE</td><td class="val">--</td><td class="unit">A</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    {% if result %}
+    <div class="status-box {{ 'status-ok' if result.comparison.match else 'status-bad' }} region-{{ result.region.name }}">
+      <span class="status-icon">{{ '✓' if result.comparison.match else '✗' }}</span>
+      <span class="status-text">
+        {% if result.region.name == 'active' %}Active region approximation OK{% elif result.region.name == 'cutoff' %}Cutoff region{% else %}Saturation region{% endif %}
+      </span>
+      <div class="status-detail">
+        VCE = {{ result.rows[3].independent }} &gt; 0.2 V (transistor in active region)
+      </div>
+    </div>
+
+    <div class="crosscheck">
+      <span class="badge {{ 'crosscheck-ok' if result.comparison.match else 'crosscheck-bad' }}">
+        {{ '✓ MATCH' if result.comparison.match else '✗ MISMATCH' }}
+      </span>
+      <span class="max-error">Max relative difference: {{ result.max_error }}</span>
+    </div>
+
+    <div class="supporting">
+      <span class="label">Supporting:</span>
+      <span class="pair"><span class="k">VBB</span> <span class="v">{{ result.vbb }}</span></span>
+      <span class="pair"><span class="k">RB</span> <span class="v">{{ result.rb }}</span></span>
+    </div>
+    {% endif %}
+  </aside>
+</div>
 
 {% if result %}
-<section class="result">
-  <div class="badges">
-    <span class="badge region-{{ result.region.name }}">REGION: {{ result.region.name|upper }}</span>
-    <span class="badge {{ 'crosscheck-ok' if result.comparison.match else 'crosscheck-bad' }}">
-      Cross-check: {{ 'MATCH' if result.comparison.match else 'MISMATCH' }}
-    </span>
-  </div>
-
-  {% if result.region.warning %}
-  <p class="warning">{{ result.region.warning }}</p>
-  {% endif %}
-
-  {% if not result.comparison.match %}
-  <p class="warning crosscheck-bad">
-    Independent calculation disagrees on: {{ result.comparison.mismatches|join(', ') }}.
-  </p>
-  {% endif %}
-
+<section class="comparison">
   <table>
     <thead>
       <tr>
@@ -70,9 +151,16 @@
       {% endfor %}
     </tbody>
   </table>
-
-  <p class="supporting">Supporting: VBB {{ result.vbb }} · RB {{ result.rb }}</p>
-  <p class="supporting">Max relative difference: {{ result.max_error }}</p>
 </section>
+{% endif %}
+
+{% if result %}
+{% if result.region and result.region.warning %}
+<p class="region-warning">{{ result.region.warning }}</p>
+{% endif %}
+
+{% if not result.comparison.match %}
+<p class="mismatch-warning">Independent calculation disagrees on: {{ result.comparison.mismatches|join(', ') }}.</p>
+{% endif %}
 {% endif %}
 {% endblock %}
