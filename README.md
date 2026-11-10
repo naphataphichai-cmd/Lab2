@@ -16,8 +16,8 @@ Enter `VCC, R1, R2, RC, RE, β, VBE`. The app returns:
 - a field-level validation message for bad input
 - a side-by-side comparison with the independent calculation
 
-The default example is 12 V, 47 kΩ, 10 kΩ, 4.7 kΩ, 1 kΩ, β = 150, VBE = 0.7 V.
-It gives approximately `IB = 8.825 µA`, `IC = 1.324 mA`, and `VCE = 4.446 V`.
+The default example is 12 V, 100 kΩ, 22 kΩ, 2.2 kΩ, 1 kΩ, β = 100, VBE = 0.70 V.
+It gives approximately `IB = 12.3 µA`, `IC = 1.23 mA`, and `VCE = 8.052 V`.
 
 ## Analytical path
 

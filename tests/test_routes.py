@@ -4,7 +4,7 @@ def test_get_page_shows_default_form(client):
     body = response.get_data(as_text=True)
     assert "BJT Common-Emitter DC Bias" in body
     assert 'name="vcc"' in body
-    assert 'value="47000"' in body
+    assert 'value="100000"' in body
     assert "Calculate" in body
 
 
@@ -17,9 +17,9 @@ def test_valid_post_shows_operating_point(client, valid_form):
     body = response.get_data(as_text=True)
     assert "REGION: ACTIVE" in body
     assert "MATCH" in body
-    assert "8.825 µA" in body
-    assert "1.324 mA" in body
-    assert "4.446 V" in body
+    assert "12.3 µA" in body
+    assert "1.23 mA" in body
+    assert "8.052 V" in body
     assert "Analytical" in body
     assert "Nodal" in body
     assert "VBB" in body

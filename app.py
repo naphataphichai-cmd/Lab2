@@ -4,12 +4,12 @@ from engineering import evaluate, format as fmt, validation
 
 DEFAULT_FORM = {
     "vcc": "12",
-    "r1": "47000",
-    "r2": "10000",
-    "rc": "4700",
+    "r1": "100000",
+    "r2": "22000",
+    "rc": "2200",
     "re": "1000",
-    "beta": "150",
-    "vbe": "0.7",
+    "beta": "100",
+    "vbe": "0.70",
 }
 
 RESULT_ROWS = (
