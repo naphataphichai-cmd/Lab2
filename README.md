@@ -9,6 +9,12 @@ independent nodal solve.
 - **Fixed Bias** — base resistor only
 - **Emitter Bias (single supply)** — base and emitter resistors
 
+## Repository
+
+- GitHub: <https://github.com/naphataphichai-cmd/Lab2>
+- Lab 03 commit: see the SHA recorded in `docs/validation.md` and in the submission
+- How to run and open the app: see [Run](#run)
+
 ## What it does
 
 Pick the circuit mode, then enter `VCC, RC, β, VBE` plus the resistors that mode
@@ -180,10 +186,87 @@ cases were run in the in-app browser and passed; `docs/lab03-a3-emitter.jpeg` is
 the captured A3 page. The test suite covers the same numbers at the Python and
 route level.
 
-AI assistance: the fixed and emitter solver/crosscheck functions, the
-mode-aware route and template, and the tests were drafted with OpenCode from the
-Lab 03 handout. The equations, units, region warnings, and browser results were
-checked against hand calculations and the running page.
+## AI assistance disclosure
+
+This Lab 03 extension was built with **OpenCode (AI coding assistant)** working
+under my direction. I supplied the Lab 03 handout, chose the three modes and the
+constraints (keep the divider results identical to Lab 02, warn instead of
+solving cutoff/saturation for the new modes, DC operating point only), and
+reviewed every change before committing it. The paragraphs below state exactly
+what the AI produced, what I checked, and where the code chooses a mode and
+converts units.
+
+### Equations and units used
+
+The engineering layer only ever sees **ohms and volts**. Every mode solves the
+same output stage, so `IC = β·IB`, `IE = (β + 1)·IB`, `VC = VCC − IC·RC`,
+`VB = VE + VBE`, `VCE = VC − VE` (currents in A, voltages in V, resistances in Ω).
+
+- **Voltage divider** (unchanged Lab 02 path):
+  `VBB = VCC·R2/(R1 + R2)`, `RB = R1·R2/(R1 + R2)`,
+  `IB = (VBB − VBE)/(RB + (β + 1)·RE)`.
+- **Fixed bias:** `IB = (VCC − VBE)/RB`, `VE = 0`, `VCE = VC`.
+- **Emitter bias (single supply):** `IB = (VCC − VBE)/(RB + (β + 1)·RE)`,
+  `IE = (β + 1)·IB`, `VE = IE·RE`.
+
+Display units are produced by `engineering/format.py`: currents in µA below
+1 mA, mA below 1 A, otherwise A; voltages in V; resistances in Ω/kΩ/MΩ. The A1–A5
+hand calculations in `docs/validation.md` use the same equations and units.
+
+### What the AI generated
+
+- `engineering/solver.py` — `solve_fixed()` and `solve_emitter()` (the divider
+  `solve()` was kept byte-for-byte).
+- `engineering/crosscheck.py` — the independent nodal systems for fixed
+  (`VB, VC, IB`) and emitter (`VB, VE, VC`) bias, solved with the existing
+  `gaussian_solve()`.
+- `engineering/evaluate.py` — `_paths()` mode dispatch and the `mode` field on
+  `Evaluation`; `engineering/model.py` — mode constants, `FixedBiasInputs`,
+  `EmitterBiasInputs`, and the `mode` argument on `display_point()`.
+- `engineering/validation.py` — `MODE_FIELDS`, `parse_mode()`,
+  `parse_inputs_for_mode()` and the shared range rules.
+- `app.py` — `rb` defaults/units, `MODE_CHOICES`, mode-aware conversion and
+  routing, the result view, and the `ACCEPTANCE_CASES` data.
+- `templates/index.html`, `templates/base.html`, `static/style.css` — mode
+  selector, conditional input rows, the SVG schematic per mode, and the
+  A1–A5 acceptance table.
+- `tests/test_modes.py` and two tests in `tests/test_routes.py` — the new-mode
+  solver, crosscheck, validation, route and acceptance-table tests.
+
+### What I verified
+
+I recomputed A1–A5 by hand from the equations above *before* running the app
+(see `docs/validation.md`), then ran each case in the browser and compared:
+`IC` within ±0.01 mA and `VCE` within ±0.02 V. I confirmed that A4 (`RE = 2 kΩ`)
+gives a lower `IC` than A3, that A5 (`RB = 0`) shows the range message with an
+empty result table and no `MATCH` badge, that the divider default still returns
+the Lab 02 values (`IB = 12.3 µA`, `IC = 1.23 mA`, `VCE = 8.052 V`), that
+selecting a mode immediately redraws the correct circuit, and that the printed
+schematic matches the mode. I also re-derived the nodal cross-check equations
+against the closed-form results and ran the full test suite (113 tests).
+
+### Where mode selection and unit conversion live
+
+- **Mode selection:** the page posts `mode`; `app.py` calls
+  `validation.parse_mode()`, which rejects unknown values; `validation.MODE_FIELDS`
+  decides which fields are parsed; then `evaluate._paths()` maps the mode to a
+  `(solver, crosscheck)` pair with `if/elif` and raises `ValueError` otherwise.
+  The template uses a `GET ?mode=` selector with `onchange="this.form.submit()"`,
+  a hidden `mode` field on the POST form, and `<noscript>` fallback button.
+- **Unit conversion:** `app.py` — `_selected_units()` reads each `*_unit` field,
+  `_to_base_units()` multiplies by `UNIT_SCALE` (`Ω`/`kΩ`/`MΩ`,
+  `V`/`mV`) using `UNIT_CHOICES`/`DEFAULT_UNITS`, and only the fields the mode
+  uses are converted. Nothing is converted back in the engineering layer;
+  presentation formatting is `engineering/format.py`.
+
+สรุปภาษาไทย: งาน Lab 3 นี้ใช้ OpenCode เป็นผู้ช่วยเขียนโค้ด โดยนักศึกษาเป็นผู้กำหนด
+โจทย์ เงื่อนไข และตรวจทานทุกส่วน ฟังก์ชันที่ AI ช่วยเขียนคือตัวแก้สมการ Fixed/Emitter,
+ nodal cross-check, การเลือกโหมดใน `evaluate._paths()`, การตรวจอินพุตตามโหมด,
+ ตัวเลือกโหมด/แผนภาพ/ตาราง A1–A5 ในเทมเพลต และชุดเทสต์ นักศึกษาเป็นผู้คำนวณค่า
+ คาดหมาย A1–A5 ด้วยมือก่อนรัน ตรวจผลบนหน้าเว็บจริงตามเกณฑ์ ±0.01 mA และ ±0.02 V
+ ตรวจว่าโหมด Divider ยังได้ค่าเดิมของ Lab 2 และตรวจสอบว่าการเลือกโหมดเกิดที่
+ `validation.parse_mode()` + `evaluate._paths()` และการแปลงหน่วยเกิดที่
+ `_selected_units()`/`_to_base_units()` ใน `app.py` ก่อนเข้าชั้นคำนวณ
 
 ## Limitations
 
