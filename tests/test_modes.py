@@ -1,6 +1,6 @@
 import pytest
 
-from engineering import model, solver
+from engineering import crosscheck, model, solver
 
 # Shared Lab 03 case values: VCC = 12 V, RC = 2.2 kΩ, β = 100, VBE = 0.70 V.
 VCC = 12.0
@@ -56,3 +56,63 @@ def test_fixed_bias_saturation_keeps_raw_negative_vce():
     point = solver.solve_fixed(_fixed(rc=15000.0))
     assert point.ib > 0.0
     assert point.vce < 0.2
+
+FIELDS = ("ib", "ic", "ie", "vce", "vb", "ve", "vc")
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        (12.0, 1e6, 2200.0, 100.0, 0.7),
+        (9.0, 470e3, 3300.0, 150.0, 0.65),
+        (15.0, 2.2e6, 4700.0, 300.0, 0.7),
+    ],
+)
+def test_fixed_crosscheck_matches_analytical(values):
+    inputs = model.FixedBiasInputs(*values)
+    analytical = solver.solve_fixed(inputs)
+    independent = crosscheck.solve_fixed(inputs)
+    for field in FIELDS:
+        assert getattr(independent, field) == pytest.approx(
+            getattr(analytical, field), rel=1e-9
+        )
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        (12.0, 1e6, 1000.0, 2200.0, 100.0, 0.7),
+        (9.0, 470e3, 680.0, 2200.0, 150.0, 0.65),
+        (15.0, 2.2e6, 1200.0, 5600.0, 50.0, 0.7),
+    ],
+)
+def test_emitter_crosscheck_matches_analytical(values):
+    inputs = model.EmitterBiasInputs(*values)
+    analytical = solver.solve_emitter(inputs)
+    independent = crosscheck.solve_emitter(inputs)
+    for field in FIELDS:
+        assert getattr(independent, field) == pytest.approx(
+            getattr(analytical, field), rel=1e-9
+        )
+
+
+def test_fixed_nodal_kcl_residuals():
+    inputs = _fixed()
+    point = crosscheck.solve_fixed(inputs)
+    base = (inputs.vcc - point.vb) / inputs.rb - point.ib
+    collector = (inputs.vcc - point.vc) / inputs.rc - point.ic
+    vbe = point.vb - inputs.vbe
+    assert abs(base) < 1e-9
+    assert abs(collector) < 1e-9
+    assert abs(vbe) < 1e-9
+
+
+def test_emitter_nodal_kcl_residuals():
+    inputs = _emitter()
+    point = crosscheck.solve_emitter(inputs)
+    base = (inputs.vcc - point.vb) / inputs.rb - point.ib
+    collector = (inputs.vcc - point.vc) / inputs.rc - point.ic
+    vbe = point.vb - point.ve - inputs.vbe
+    assert abs(base) < 1e-9
+    assert abs(collector) < 1e-9
+    assert abs(vbe) < 1e-9
