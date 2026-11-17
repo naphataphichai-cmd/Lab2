@@ -4,11 +4,19 @@ from dataclasses import dataclass
 
 from . import model
 
-REQUIRED_FIELDS = ("vcc", "r1", "r2", "rc", "re", "beta", "vbe")
-RESISTOR_FIELDS = ("r1", "r2", "rc", "re")
+MODE_FIELDS = {
+    model.MODE_DIVIDER: ("vcc", "r1", "r2", "rc", "re", "beta", "vbe"),
+    model.MODE_FIXED: ("vcc", "rb", "rc", "beta", "vbe"),
+    model.MODE_EMITTER: ("vcc", "rb", "re", "rc", "beta", "vbe"),
+}
+
+REQUIRED_FIELDS = MODE_FIELDS[model.MODE_DIVIDER]
+RESISTOR_FIELDS = ("rb", "r1", "r2", "rc", "re")
 
 R_MIN = 1e-3
 R_MAX = 10e6
+
+MODE_ERROR = "Choose a supported circuit mode."
 
 
 @dataclass(frozen=True)
@@ -17,13 +25,30 @@ class FieldError:
     message: str
 
 
-def parse_inputs(
+def parse_mode(raw: str | None) -> tuple[str | None, FieldError | None]:
+    text = raw.strip() if isinstance(raw, str) else ""
+    if not text:
+        return model.MODE_DIVIDER, None
+    if text in MODE_FIELDS:
+        return text, None
+    return None, FieldError("mode", MODE_ERROR)
+
+
+def parse_inputs_for_mode(
     form: Mapping[str, str],
-) -> tuple[model.BiasInputs | None, list[FieldError]]:
+    mode: str,
+) -> tuple[
+    model.BiasInputs | model.FixedBiasInputs | model.EmitterBiasInputs | None,
+    list[FieldError],
+]:
+    fields = MODE_FIELDS.get(mode)
+    if fields is None:
+        return None, [FieldError("mode", MODE_ERROR)]
+
     errors: list[FieldError] = []
     values: dict[str, float] = {}
 
-    for field in REQUIRED_FIELDS:
+    for field in fields:
         raw = form.get(field, "")
         text = raw.strip() if isinstance(raw, str) else str(raw).strip()
 
@@ -68,4 +93,15 @@ def parse_inputs(
     if errors:
         return None, errors
 
+    if mode == model.MODE_FIXED:
+        return model.FixedBiasInputs(**values), []
+    if mode == model.MODE_EMITTER:
+        return model.EmitterBiasInputs(**values), []
     return model.BiasInputs(**values), []
+
+
+def parse_inputs(
+    form: Mapping[str, str],
+) -> tuple[model.BiasInputs | None, list[FieldError]]:
+    inputs, errors = parse_inputs_for_mode(form, model.MODE_DIVIDER)
+    return inputs, errors

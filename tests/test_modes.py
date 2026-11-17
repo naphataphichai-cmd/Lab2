@@ -1,6 +1,6 @@
 ﻿import pytest
 
-from engineering import crosscheck, evaluate, model, solver
+from engineering import crosscheck, evaluate, model, solver, validation
 
 # Shared Lab 03 case values: VCC = 12 V, RC = 2.2 kฮฉ, ฮฒ = 100, VBE = 0.70 V.
 VCC = 12.0
@@ -148,4 +148,69 @@ def test_display_point_only_rewrites_divider_cutoff():
     region = model.Region(model.REGION_CUTOFF, model.CUTOFF_WARNING)
 
     assert model.display_point(inputs, raw, region, model.MODE_FIXED) is raw
+
+
+FIXED_FORM = {"vcc": "12", "rb": "1000000", "rc": "2200", "beta": "100", "vbe": "0.7"}
+EMITTER_FORM = dict(FIXED_FORM, re="1000")
+
+
+def test_parse_mode_defaults_to_divider():
+    for raw in (None, "", "divider"):
+        mode, error = validation.parse_mode(raw)
+        assert mode == model.MODE_DIVIDER
+        assert error is None
+
+
+def test_parse_mode_rejects_unknown():
+    mode, error = validation.parse_mode("bogus")
+    assert mode is None
+    assert error is not None
+    assert error.field == "mode"
+
+
+def test_fixed_form_requires_rb():
+    form = dict(FIXED_FORM, rb="")
+    inputs, errors = validation.parse_inputs_for_mode(form, model.MODE_FIXED)
+    assert inputs is None
+    assert {error.field: error.message for error in errors}["rb"] == "Required."
+
+
+def test_fixed_form_ignores_divider_fields():
+    form = dict(FIXED_FORM, r1="abc", r2="0", re="")
+    inputs, errors = validation.parse_inputs_for_mode(form, model.MODE_FIXED)
+    assert errors == []
+    assert inputs == model.FixedBiasInputs(12.0, 1e6, 2200.0, 100.0, 0.7)
+
+
+def test_emitter_form_requires_rb_and_re():
+    for field in ("rb", "re"):
+        form = dict(EMITTER_FORM, **{field: ""})
+        _, errors = validation.parse_inputs_for_mode(form, model.MODE_EMITTER)
+        assert {error.field: error.message for error in errors}[field] == "Required."
+
+
+def test_emitter_form_parses_and_ignores_divider_fields():
+    form = dict(EMITTER_FORM, r1="abc", r2="-5")
+    inputs, errors = validation.parse_inputs_for_mode(form, model.MODE_EMITTER)
+    assert errors == []
+    assert inputs == model.EmitterBiasInputs(12.0, 1e6, 1000.0, 2200.0, 100.0, 0.7)
+
+
+@pytest.mark.parametrize("field", ["rb", "re"])
+def test_mode_resistor_range_is_enforced(field):
+    form = dict(EMITTER_FORM, **{field: "0"})
+    _, errors = validation.parse_inputs_for_mode(form, model.MODE_EMITTER)
+    assert {error.field: error.message for error in errors}[field] == (
+        "Must be between 1 mΩ and 10 MΩ."
+    )
+
+
+def test_parse_inputs_for_divider_matches_parse_inputs():
+    form = {
+        "vcc": "12", "r1": "47000", "r2": "10000", "rc": "4700",
+        "re": "1000", "beta": "150", "vbe": "0.7",
+    }
+    assert validation.parse_inputs_for_mode(form, model.MODE_DIVIDER) == (
+        validation.parse_inputs(form)
+    )
 
