@@ -47,6 +47,58 @@ UNIT_CHOICES = {
 
 MODE_CHOICES = [(mode, model.MODE_LABELS[mode]) for mode in model.MODES]
 
+# Lab 03 acceptance record shown on the page. Expected values were calculated
+# by hand from the bias equations before the app was run; observed values are
+# what the in-app browser showed for each case.
+ACCEPTANCE_CASES = (
+    {
+        "id": "A1",
+        "title": "Original mode",
+        "inputs": "Divider · R1 = 100 kΩ, R2 = 22 kΩ, RE = 1 kΩ",
+        "expected": "IC = 1.2298 mA · VCE = 8.0522 V (same as Lab 02)",
+        "observed": "IC = 1.23 mA · VCE = 8.052 V",
+        "method": "OpenCode Browser",
+        "status": "PASS",
+    },
+    {
+        "id": "A2",
+        "title": "Fixed",
+        "inputs": "Fixed · RB = 1 MΩ",
+        "expected": "IC = 1.1300 mA · VCE = 9.5140 V; no RE input needed",
+        "observed": "IC = 1.13 mA · VCE = 9.514 V",
+        "method": "OpenCode Browser",
+        "status": "PASS",
+    },
+    {
+        "id": "A3",
+        "title": "Emitter",
+        "inputs": "Emitter · RB = 1 MΩ, RE = 1 kΩ",
+        "expected": "IC = 1.0263 mA · VCE = 8.7054 V; RE field used",
+        "observed": "IC = 1.026 mA · VCE = 8.705 V",
+        "method": "OpenCode Browser",
+        "status": "PASS",
+    },
+    {
+        "id": "A4",
+        "title": "One value changed",
+        "inputs": "Emitter · as A3 with RE = 2 kΩ",
+        "expected": "IC must fall from A3: IC = 0.9401 mA · VCE = 8.0328 V",
+        "observed": "IC = 940.1 µA · VCE = 8.033 V (lower than A3)",
+        "method": "OpenCode Browser",
+        "status": "PASS",
+    },
+    {
+        "id": "A5",
+        "title": "Bad input",
+        "inputs": "Fixed · RB = 0",
+        "expected": "Message for RB, page stays up, no previous result reused",
+        "observed": "“Must be between 1 mΩ and 10 MΩ.”; result table shows --",
+        "method": "OpenCode Browser",
+        "status": "PASS",
+    },
+)
+
+
 RESULT_ROWS = (
     ("VB", "vb", "voltage"),
     ("VE", "ve", "voltage"),
@@ -155,6 +207,7 @@ def create_app() -> Flask:
             errors=errors or {},
             form_error=form_error,
             result=result,
+            acceptance=ACCEPTANCE_CASES,
         )
 
     @app.get("/")

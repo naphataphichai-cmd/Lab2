@@ -112,3 +112,33 @@ def test_extreme_valid_input_does_not_500(client, valid_form):
     )
     response = client.post("/", data=form)
     assert response.status_code == 200
+
+
+def test_acceptance_table_lists_all_cases(client):
+    body = client.get("/").get_data(as_text=True)
+
+    for case_id in ("A1", "A2", "A3", "A4", "A5"):
+        assert f"{case_id} ·" in body
+
+    for header in (
+        "Case",
+        "Mode and inputs",
+        "Expected before run",
+        "Observed",
+        "Method",
+        "Status",
+    ):
+        assert f"<th>{header}</th>" in body
+
+    assert body.count('class="status-pill pass"') == 5
+    assert "PASS" in body
+
+
+def test_acceptance_table_shows_observed_values(client):
+    body = client.get("/").get_data(as_text=True)
+
+    assert "IC = 1.23 mA" in body
+    assert "IC = 1.13 mA" in body
+    assert "IC = 1.026 mA" in body
+    assert "IC = 940.1 µA" in body
+    assert "Must be between 1 mΩ and 10 MΩ." in body

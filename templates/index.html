@@ -238,6 +238,42 @@
 </section>
 {% endif %}
 
+<section class="acceptance">
+  <h2>A1–A5 · Browser acceptance</h2>
+  <p class="acceptance-note">
+    Expected values were calculated by hand from the Lab 03 equations before
+    running the app. Observed values were read from this page in the in-app
+    browser, with tolerance ±0.01 mA for I<sub>C</sub> and ±0.02 V for
+    V<sub>CE</sub>.
+  </p>
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Case</th>
+          <th>Mode and inputs</th>
+          <th>Expected before run</th>
+          <th>Observed</th>
+          <th>Method</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for case in acceptance %}
+        <tr>
+          <td class="case-id">{{ case.id }} · {{ case.title }}</td>
+          <td>{{ case.inputs }}</td>
+          <td>{{ case.expected }}</td>
+          <td>{{ case.observed }}</td>
+          <td class="method">{{ case.method }}</td>
+          <td><span class="status-pill {{ 'pass' if case.status == 'PASS' else 'fail' }}">{{ case.status }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
 {% if result %}
 {% if result.region and result.region.warning %}
 <p class="region-warning">{{ result.region.warning }}</p>

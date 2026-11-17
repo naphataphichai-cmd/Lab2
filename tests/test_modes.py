@@ -261,11 +261,13 @@ def test_emitter_mode_a4_uses_new_re(client):
 def test_fixed_mode_a5_rejects_zero_rb(client):
     body = client.post("/", data=dict(FIXED_POST, rb="0")).get_data(as_text=True)
     assert "Must be between 1 mΩ and 10 MΩ." in body
-    assert "9.514 V" not in body
+    assert '<td class="val">9.514 V</td>' not in body
+    assert "✓ MATCH" not in body
 
 
 def test_unknown_mode_is_rejected(client):
     body = client.post("/", data=dict(FIXED_POST, mode="bogus")).get_data(as_text=True)
     assert "Choose a supported circuit mode." in body
-    assert "1.13 mA" not in body
+    assert '<td class="val">1.13 mA</td>' not in body
+    assert "✓ MATCH" not in body
 
