@@ -1,8 +1,8 @@
-import pytest
+﻿import pytest
 
-from engineering import crosscheck, model, solver
+from engineering import crosscheck, evaluate, model, solver
 
-# Shared Lab 03 case values: VCC = 12 V, RC = 2.2 kΩ, β = 100, VBE = 0.70 V.
+# Shared Lab 03 case values: VCC = 12 V, RC = 2.2 kฮฉ, ฮฒ = 100, VBE = 0.70 V.
 VCC = 12.0
 RC = 2200.0
 BETA = 100.0
@@ -116,3 +116,36 @@ def test_emitter_nodal_kcl_residuals():
     assert abs(base) < 1e-9
     assert abs(collector) < 1e-9
     assert abs(vbe) < 1e-9
+
+def test_evaluate_dispatches_fixed_mode():
+    evaluation = evaluate.evaluate(_fixed(), model.MODE_FIXED)
+    assert evaluation.comparison.match
+    assert evaluation.region.name == model.REGION_ACTIVE
+    assert evaluation.analytical.ic == pytest.approx(1.13e-3, rel=1e-12)
+
+
+def test_evaluate_dispatches_emitter_mode():
+    evaluation = evaluate.evaluate(_emitter(), model.MODE_EMITTER)
+    assert evaluation.comparison.match
+    assert evaluation.analytical.vce == pytest.approx(8.705449591281, rel=1e-9)
+
+
+def test_evaluate_fixed_saturation_keeps_raw_point():
+    evaluation = evaluate.evaluate(_fixed(rc=15000.0), model.MODE_FIXED)
+    assert evaluation.region.name == model.REGION_SATURATION
+    assert evaluation.region.warning is not None
+    assert evaluation.analytical.vce < 0.2
+
+
+def test_evaluate_rejects_unknown_mode():
+    with pytest.raises(ValueError):
+        evaluate.evaluate(_fixed(), "bogus")
+
+
+def test_display_point_only_rewrites_divider_cutoff():
+    inputs = _fixed()
+    raw = solver.solve_fixed(inputs)
+    region = model.Region(model.REGION_CUTOFF, model.CUTOFF_WARNING)
+
+    assert model.display_point(inputs, raw, region, model.MODE_FIXED) is raw
+

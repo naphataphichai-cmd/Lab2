@@ -113,7 +113,12 @@ def cutoff_point(inputs: BiasInputs) -> OperatingPoint:
     )
 
 
-def display_point(inputs: BiasInputs, op: OperatingPoint, region: Region) -> OperatingPoint:
-    if region.name == REGION_CUTOFF:
+def display_point(
+    inputs: BiasInputs | FixedBiasInputs | EmitterBiasInputs,
+    op: OperatingPoint,
+    region: Region,
+    mode: str = MODE_DIVIDER,
+) -> OperatingPoint:
+    if mode == MODE_DIVIDER and region.name == REGION_CUTOFF:
         return cutoff_point(inputs)
     return op
