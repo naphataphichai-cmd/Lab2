@@ -2,6 +2,18 @@ from dataclasses import dataclass
 
 VCE_SAT = 0.2
 
+MODE_DIVIDER = "divider"
+MODE_FIXED = "fixed"
+MODE_EMITTER = "emitter"
+
+MODE_LABELS = {
+    MODE_DIVIDER: "Voltage Divider Bias",
+    MODE_FIXED: "Fixed Bias",
+    MODE_EMITTER: "Emitter Bias (single supply)",
+}
+
+MODES = (MODE_DIVIDER, MODE_FIXED, MODE_EMITTER)
+
 REGION_CUTOFF = "cutoff"
 REGION_ACTIVE = "active"
 REGION_SATURATION = "saturation"
@@ -25,6 +37,25 @@ class BiasInputs:
     r2: float
     rc: float
     re: float
+    beta: float
+    vbe: float
+
+
+@dataclass(frozen=True)
+class FixedBiasInputs:
+    vcc: float
+    rb: float
+    rc: float
+    beta: float
+    vbe: float
+
+
+@dataclass(frozen=True)
+class EmitterBiasInputs:
+    vcc: float
+    rb: float
+    re: float
+    rc: float
     beta: float
     vbe: float
 
