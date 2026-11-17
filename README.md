@@ -1,41 +1,76 @@
-# BJT Common-Emitter DC Bias Calculator
+# BJT Common-Emitter DC Bias Calculator — Lab 03
 
 ENG29 2121 lab deliverable. A one-page Flask app that computes the DC operating
-point of a voltage-divider-biased common-emitter stage, warns when the bias is
-outside the active region, and checks the result against an independent nodal
-solve.
+point of a common-emitter stage for **three bias circuits**, warns when the bias
+is outside the forward-active region, and checks every mode against an
+independent nodal solve.
+
+- **Voltage Divider Bias** — unchanged from Lab 02
+- **Fixed Bias** — base resistor only
+- **Emitter Bias (single supply)** — base and emitter resistors
 
 ## What it does
 
-Enter `VCC, R1, R2, RC, RE, β, VBE`. Each field carries its own unit selector
-(`Ω` / `kΩ` / `MΩ` for resistors, `V` / `mV` for voltages), so the circuit can
-be entered the way it is drawn on the sheet. The app returns:
+Pick the circuit mode, then enter `VCC, RC, β, VBE` plus the resistors that mode
+uses:
+
+| Mode | Extra inputs | Resistor placement |
+|---|---|---|
+| Fixed Bias | `RB` | `RB` from VCC to base, emitter tied to ground |
+| Emitter Bias | `RB, RE` | `RB` from VCC to base, `RE` from emitter to ground |
+| Voltage Divider | `R1, R2, RE` | `R1` VCC→base, `R2` base→ground, `RE` emitter→ground |
+
+Each field carries its own unit selector (`Ω` / `kΩ` / `MΩ` for resistors,
+`V` / `mV` for voltages), so the circuit can be entered the way it is drawn on
+the sheet. The app returns:
 
 - `IB, IC, IE` in µA/mA/A
 - `VCE, VB, VE, VC` in volts
-- `VBB` and `RB` as supporting quantities
 - the operating region: `cutoff`, `active`, or `saturation`
 - a field-level validation message for bad input
 - a side-by-side comparison with the independent calculation
 
-The page shows the input form on the left, a schematic of the common-emitter
-stage in the middle with the entered component values, and the operating point
-on the right.
+The page shows the input form on the left, a schematic of the selected circuit in
+the middle with the entered component values, and the operating point on the
+right. Changing the mode reloads the form with that circuit's fields; the divider
+mode still shows `R1`, `R2`, and `RE` exactly as in Lab 02.
 
-The default example is 12 V, 100 kΩ, 22 kΩ, 2.2 kΩ, 1 kΩ, β = 100, VBE = 0.70 V.
-It gives approximately `IB = 12.3 µA`, `IC = 1.23 mA`, and `VCE = 8.052 V`.
+The divider default example is 12 V, 100 kΩ, 22 kΩ, 2.2 kΩ, 1 kΩ, β = 100,
+VBE = 0.70 V. It gives approximately `IB = 12.3 µA`, `IC = 1.23 mA`, and
+`VCE = 8.052 V` — the same values as Lab 02.
 
 ## Analytical path
 
-`solver.py` uses the Thévenin equivalent of the base divider:
+`engineering/solver.py` keeps the Lab 02 Thévenin divider path and adds one
+function per new mode.
+
+Divider (unchanged):
 
 ```text
 VBB = VCC · R2 / (R1 + R2)
 RB  = R1 · R2 / (R1 + R2)
 IB  = (VBB − VBE) / (RB + (β + 1)·RE)
+```
+
+Fixed:
+
+```text
+IB = (VCC − VBE) / RB
+VE = 0
+```
+
+Emitter (single supply):
+
+```text
+IB = (VCC − VBE) / [RB + (β + 1)·RE]
+VE = IE · RE
+```
+
+Shared output stage:
+
+```text
 IC  = β · IB
-IE  = (β + 1)·IB
-VE  = IE · RE
+IE  = (β + 1) · IB
 VC  = VCC − IC · RC
 VB  = VE + VBE
 VCE = VC − VE
@@ -43,25 +78,34 @@ VCE = VC − VE
 
 ## Independent cross-check
 
-`crosscheck.py` does not use the Thévenin formulas. It writes the base,
-collector, and base-emitter equations in `VB, VE, VC`:
+`engineering/crosscheck.py` does not reuse the closed-form equations. For each
+mode it writes the node equations and solves them with Gaussian elimination and
+partial pivoting:
 
-```text
-−(1/R1 + 1/R2)·VB − (1/((β+1)·RE))·VE = −VCC/R1
-−(β/((β+1)·RE))·VE − (1/RC)·VC        = −VCC/RC
-VB − VE                                = VBE
-```
+- **Divider** — unknowns `VB, VE, VC`:
+  ```text
+  −(1/R1 + 1/R2)·VB − (1/((β+1)·RE))·VE = −VCC/R1
+  −(β/((β+1)·RE))·VE − (1/RC)·VC        = −VCC/RC
+  VB − VE                                = VBE
+  ```
+- **Fixed** — unknowns `VB, VC, IB`:
+  ```text
+  (1/RB)·VB + IB          = VCC/RB
+  (1/RC)·VC + β·IB        = VCC/RC
+  VB                      = VBE
+  ```
+- **Emitter** — unknowns `VB, VE, VC`: the divider base equation with
+  `1/R1 + 1/R2` replaced by `1/RB`.
 
-It solves the resulting 3×3 system with Gaussian elimination and partial
-pivoting. The two paths are compared field by field with a relative tolerance
-of `1e-6`; the page shows both columns and the maximum relative difference.
+The two paths are compared field by field with a relative tolerance of `1e-6`;
+the page shows both columns and the maximum relative difference.
 
 ## Region rules
 
 - **Cutoff** — the solved `IB <= 0`. The physical cutoff result is constructed
-  by `model.py`: `IB = IC = IE = 0`, `VE = 0`, `VC = VCC`, `VCE = VCC`, and
-  `VB` is the unloaded divider voltage. A warning explains that the transistor
-  is off.
+  by `model.py` for the divider; new modes keep the raw point and show the
+  warning. With valid inputs `VBE < VCC`, so Fixed and Emitter cannot reach
+  cutoff in this model.
 - **Saturation** — `VCE <= 0.2 V`. Raw values are shown, including a negative
   `VCE` if the model produces one. A warning says the point is not valid for
   amplifier use. Nothing is clamped.
@@ -69,19 +113,20 @@ of `1e-6`; the page shows both columns and the maximum relative difference.
 
 ## Validation
 
-Every field is required and must be finite. The chosen unit is converted to
-ohms and volts at the edge of the app, so the engineering layer only ever sees
-base units. Accepted ranges:
+Only the fields the selected mode uses are required and converted. Every used
+field must be finite. The chosen unit is converted to ohms and volts at the edge
+of the app, so the engineering layer only ever sees base units. Accepted ranges:
 
 | Field | Range |
 |---|---|
 | `VCC` | `0 < VCC <= 100 V` |
-| `R1, R2, RC, RE` | `1 mΩ <= R <= 10 MΩ` |
+| `RB, R1, R2, RC, RE` | `1 mΩ <= R <= 10 MΩ` |
 | `β` | `1 < β <= 2000` |
 | `VBE` | `0 <= VBE < VCC` |
 
-Invalid input returns the form with the submitted values preserved and the
-message next to the field. Non-finite intermediate results are reported as a
+An unknown mode is rejected instead of being treated as divider. Invalid input
+returns the form with the submitted values preserved, the message next to the
+field, and no previous result. Non-finite intermediate results are reported as a
 normal error instead of a 500.
 
 ## Run
@@ -92,7 +137,8 @@ python -m venv .venv
 .\.venv\Scripts\python -m flask --app app run --port 5000
 ```
 
-Open <http://127.0.0.1:5000/>.
+Open <http://127.0.0.1:5000/>. Use `http://127.0.0.1:5000/?mode=fixed` to open
+the page directly in Fixed mode (or pick the mode in the page).
 
 ## Test
 
@@ -103,20 +149,34 @@ Open <http://127.0.0.1:5000/>.
 ## Project structure
 
 ```text
-app.py                      Flask factory, routes, view building
+app.py                      Flask factory, mode selection, unit conversion, view building
 engineering/
-  model.py                  dataclasses, constants, region classification
-  solver.py                 analytical Thévenin path
-  crosscheck.py             independent nodal path + Gaussian elimination
-  evaluate.py               runs both paths and builds the comparison
-  validation.py             input parsing and field rules
+  model.py                  mode names, input dataclasses, region rules, display point
+  solver.py                 analytical paths: divider (Thévenin), fixed, emitter
+  crosscheck.py             independent nodal paths + Gaussian elimination
+  evaluate.py               dispatches by mode and builds the comparison
+  validation.py             mode-aware parsing and field rules
   compare.py                tolerance comparison
   format.py                 value → (number, unit)
 templates/                  base and index pages
 static/style.css            lab-sheet styling
 tests/                      unit and route tests
+docs/validation.md          Lab 03 A1–A5 acceptance record
 docs/superpowers/           approved design and implementation plan
 ```
+
+## Lab 03 acceptance
+
+`docs/validation.md` holds the A1–A5 table with independently calculated
+expected values, the observed browser results, and the method used. All five
+cases were run in the in-app browser and passed; `docs/lab03-a3-emitter.jpeg` is
+the captured A3 page. The test suite covers the same numbers at the Python and
+route level.
+
+AI assistance: the fixed and emitter solver/crosscheck functions, the
+mode-aware route and template, and the tests were drafted with OpenCode from the
+Lab 03 handout. The equations, units, region warnings, and browser results were
+checked against hand calculations and the running page.
 
 ## Limitations
 

@@ -137,7 +137,7 @@ input, .unit-select {
 }
 
 input { width: 78px; }
-.unit-select { width: 62px; }
+.unit-select { width: 70px; }
 
 input:focus, .unit-select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
@@ -188,11 +188,12 @@ input:focus, .unit-select:focus { outline: 2px solid var(--accent); outline-offs
 
 .mode-form .field-label {
   min-width: auto;
+  flex: 1 1 100%;
 }
 
 .mode-select {
-  flex: 1;
-  min-width: 140px;
+  flex: 1 1 auto;
+  min-width: 0;
   padding: 0.45rem 0.5rem;
   border: 1px solid var(--line);
   border-radius: 6px;
