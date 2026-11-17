@@ -12,7 +12,7 @@ independent nodal solve.
 ## Repository
 
 - GitHub: <https://github.com/naphataphichai-cmd/Lab2>
-- Lab 03 commit: see the SHA recorded in `docs/validation.md` and in the submission
+- Lab 03 commit: `46ffd41f309524498e513b2f2718b633981cc2cd`
 - How to run and open the app: see [Run](#run)
 
 ## What it does
