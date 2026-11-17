@@ -214,3 +214,58 @@ def test_parse_inputs_for_divider_matches_parse_inputs():
         validation.parse_inputs(form)
     )
 
+
+FIXED_POST = {
+    "mode": "fixed", "vcc": "12", "vcc_unit": "V", "rb": "1", "rb_unit": "MΩ",
+    "rc": "2.2", "rc_unit": "kΩ", "beta": "100", "vbe": "0.70", "vbe_unit": "V",
+}
+EMITTER_POST = dict(FIXED_POST, mode="emitter", re="1", re_unit="kΩ")
+
+
+def test_get_fixed_mode_shows_rb_only(client):
+    body = client.get("/?mode=fixed").get_data(as_text=True)
+    assert 'name="rb"' in body
+    assert 'name="r1"' not in body
+    assert 'name="re"' not in body
+    assert "Fixed Bias" in body
+
+
+def test_get_divider_mode_still_shows_voltage_divider(client):
+    body = client.get("/").get_data(as_text=True)
+    assert 'name="r1"' in body
+    assert 'name="r2"' in body
+    assert 'name="re"' in body
+
+
+def test_fixed_mode_a2(client):
+    body = client.post("/", data=FIXED_POST).get_data(as_text=True)
+    assert "Fixed Bias" in body
+    assert "1.13 mA" in body
+    assert "9.514 V" in body
+    assert "MATCH" in body
+
+
+def test_emitter_mode_a3(client):
+    body = client.post("/", data=EMITTER_POST).get_data(as_text=True)
+    assert "Emitter Bias" in body
+    assert "1.026 mA" in body
+    assert "8.705 V" in body
+
+
+def test_emitter_mode_a4_uses_new_re(client):
+    body = client.post("/", data=dict(EMITTER_POST, re="2")).get_data(as_text=True)
+    assert "940.1 µA" in body
+    assert "8.033 V" in body
+
+
+def test_fixed_mode_a5_rejects_zero_rb(client):
+    body = client.post("/", data=dict(FIXED_POST, rb="0")).get_data(as_text=True)
+    assert "Must be between 1 mΩ and 10 MΩ." in body
+    assert "9.514 V" not in body
+
+
+def test_unknown_mode_is_rejected(client):
+    body = client.post("/", data=dict(FIXED_POST, mode="bogus")).get_data(as_text=True)
+    assert "Choose a supported circuit mode." in body
+    assert "1.13 mA" not in body
+

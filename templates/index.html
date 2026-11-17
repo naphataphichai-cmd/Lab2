@@ -2,9 +2,9 @@
 
 {% macro field(name, label, unit, values, errors, choices=None, selected=None) %}
 <div class="input-row">
-  <label class="field-label">{{ label }}</label>
+  <label class="field-label" for="{{ name }}">{{ label }}</label>
   <div class="field-input">
-    <input name="{{ name }}" value="{{ values.get(name, '') }}" inputmode="decimal" autocomplete="off">
+    <input id="{{ name }}" name="{{ name }}" value="{{ values.get(name, '') }}" inputmode="decimal" autocomplete="off">
     {% if choices %}
     <select name="{{ name }}_unit" class="unit-select" aria-label="{{ label }} unit">
       {% for choice in choices %}
@@ -23,8 +23,8 @@
 <header class="app-header">
   <div class="header-chip">💻</div>
   <div class="header-text">
-    <h1>Lab 02: BJT DC Bias Web App</h1>
-    <div class="course">ENG29 2121 &mdash; Common Emitter (Voltage Divider Bias)</div>
+    <h1>Lab 03: BJT DC Bias Web App</h1>
+    <div class="course">ENG29 2121 &mdash; Common Emitter (three bias circuits)</div>
   </div>
   <div class="header-badge">&lt;/&gt; Computer Programming for Electrical Engineers</div>
 </header>
@@ -32,28 +32,53 @@
 <div class="lab">
   <aside class="panel inputs">
     <h2 class="panel-title"><span class="panel-icon">⚙</span> Input Parameters</h2>
+
+    <form method="get" action="/" class="mode-form">
+      <label class="field-label" for="mode">Circuit Mode</label>
+      <select id="mode" name="mode" class="mode-select">
+        {% for value, label in mode_choices %}
+        <option value="{{ value }}" {% if value == mode %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-mode">Load circuit</button>
+    </form>
+
     <form method="post" action="/" novalidate class="param-form">
+      <input type="hidden" name="mode" value="{{ mode }}">
+
       {{ field("vcc", "VCC (Supply Voltage)", "V", values, errors, unit_choices.get("vcc"), units.get("vcc")) }}
+
+      {% if mode == 'divider' %}
       {{ field("r1", "R1 (Upper Divider)", "kΩ", values, errors, unit_choices.get("r1"), units.get("r1")) }}
       {{ field("r2", "R2 (Lower Divider)", "kΩ", values, errors, unit_choices.get("r2"), units.get("r2")) }}
+      {% else %}
+      {{ field("rb", "RB (Base Resistor)", "MΩ", values, errors, unit_choices.get("rb"), units.get("rb")) }}
+      {% endif %}
+
       {{ field("rc", "RC (Collector Resistor)", "kΩ", values, errors, unit_choices.get("rc"), units.get("rc")) }}
+
+      {% if mode != 'fixed' %}
       {{ field("re", "RE (Emitter Resistor)", "kΩ", values, errors, unit_choices.get("re"), units.get("re")) }}
+      {% endif %}
+
       {{ field("beta", "β (Current Gain)", "–", values, errors) }}
       {{ field("vbe", "VBE (Base-Emitter Voltage)", "V", values, errors, unit_choices.get("vbe"), units.get("vbe")) }}
+
       {% if form_error %}<p class="form-error">{{ form_error }}</p>{% endif %}
       <button type="submit" class="btn-calc">📋 Calculate DC Bias</button>
     </form>
   </aside>
 
   <section class="panel circuit">
-    <h2 class="panel-title"><span class="panel-icon">🔌</span> Circuit: Common-Emitter Amplifier</h2>
+    <h2 class="panel-title"><span class="panel-icon">🔌</span> Circuit: {{ mode_label }}</h2>
     <div class="circuit-body">
-      <svg class="schematic" viewBox="0 0 340 420" role="img" aria-label="Common-emitter amplifier circuit schematic">
+      <svg class="schematic" viewBox="0 0 340 420" role="img" aria-label="Common-emitter amplifier circuit schematic, {{ mode_label }}">
         <!-- supply rail -->
         <circle class="node" cx="240" cy="45" r="4" />
         <path class="wire" d="M240,49 V80" />
         <path class="wire" d="M90,80 H240" />
 
+        {% if mode == 'divider' %}
         <!-- R1 -->
         <path class="wire" d="M90,80 V96 L81,104 L99,116 L81,128 L99,140 V160" />
         <path class="wire" d="M90,160 V250" />
@@ -68,6 +93,14 @@
         <path class="wire" d="M78,376 H102 M83,382 H97 M88,388 H92" />
         <text class="ref" x="78" y="312" text-anchor="end">R2</text>
         <text class="ref-val" x="78" y="330" text-anchor="end">{{ values.r2 if values else '' }} {{ units.r2 if units else '' }}</text>
+        {% else %}
+        <!-- RB from VCC to base -->
+        <path class="wire" d="M90,80 V96 L81,104 L99,116 L81,128 L99,140 V160" />
+        <path class="wire" d="M90,160 V250" />
+        <circle class="node" cx="90" cy="250" r="3.5" />
+        <text class="ref" x="78" y="112" text-anchor="end">RB</text>
+        <text class="ref-val" x="78" y="130" text-anchor="end">{{ values.rb if values else '' }} {{ units.rb if units else '' }}</text>
+        {% endif %}
 
         <!-- base wire -->
         <path class="wire" d="M90,250 H213" />
@@ -88,6 +121,11 @@
         <text class="ref-val" x="262" y="258">NPN</text>
         <text class="ref-val" x="262" y="274">(β = {{ values.beta if values else '' }})</text>
 
+        {% if mode == 'fixed' %}
+        <!-- emitter tied directly to ground -->
+        <path class="wire" d="M240,272 V396" />
+        <path class="wire" d="M228,396 H252 M233,402 H247 M238,408 H242" />
+        {% else %}
         <!-- RE -->
         <path class="wire" d="M240,272 V300" />
         <path class="wire" d="M240,300 V316 L231,324 L249,336 L231,348 L249,360 V380" />
@@ -95,6 +133,7 @@
         <path class="wire" d="M228,396 H252 M233,402 H247 M238,408 H242" />
         <text class="ref" x="252" y="338">RE</text>
         <text class="ref-val" x="252" y="356">{{ values.re if values else '' }} {{ units.re if units else '' }}</text>
+        {% endif %}
 
         <text class="ref-val" x="250" y="50">VCC = {{ values.vcc if values else '' }} {{ units.vcc if units else '' }}</text>
       </svg>
@@ -103,6 +142,7 @@
 
   <aside class="panel results">
     <h2 class="panel-title"><span class="panel-icon">📊</span> DC Bias Results</h2>
+    <p class="mode-tag">{{ mode_label }}</p>
     <table class="results-table">
       <tbody>
         {% if result %}
@@ -134,7 +174,13 @@
         </span>
       </div>
       <div class="status-detail">
+        {% if result.region.name == 'active' %}
         VCE = {{ result.rows[3].independent }} &gt; 0.2 V (transistor in active region)
+        {% elif result.region.name == 'saturation' %}
+        VCE = {{ result.rows[3].independent }} ≤ 0.2 V &mdash; forward-active model may not apply
+        {% else %}
+        IB ≤ 0 &mdash; the base loop cannot supply forward current
+        {% endif %}
       </div>
     </div>
 
@@ -145,23 +191,25 @@
       <span class="max-error">Max relative difference: {{ result.max_error }}</span>
     </div>
 
+    {% if result.show_supporting %}
     <div class="supporting">
       <span class="label">Supporting:</span>
       <span class="pair"><span class="k">VBB</span> <span class="v">{{ result.vbb }}</span></span>
       <span class="pair"><span class="k">RB</span> <span class="v">{{ result.rb }}</span></span>
     </div>
     {% endif %}
+    {% endif %}
   </aside>
 </div>
 
 <section class="goal-band">
   <span class="goal-chip">🎯</span>
-  <span class="goal-title">Week 2 Goal</span>
+  <span class="goal-title">Week 3 Goal</span>
   <span class="goal-text">
-    Rough target for this lab: Build a Flask web app that takes the circuit parameters,
-    computes the BJT DC bias (V<sub>B</sub>, V<sub>E</sub>, V<sub>C</sub>, V<sub>CE</sub>,
-    I<sub>B</sub>, I<sub>C</sub>, I<sub>E</sub>) for a common-emitter amplifier with
-    voltage-divider bias, and displays the results.
+    Extend the Lab 2 Flask app to three bias circuits — fixed, single-supply emitter,
+    and voltage divider — computing V<sub>B</sub>, V<sub>E</sub>, V<sub>C</sub>,
+    V<sub>CE</sub>, I<sub>B</sub>, I<sub>C</sub>, I<sub>E</sub> for the selected mode
+    while keeping the original divider results unchanged.
   </span>
 </section>
 

@@ -5,7 +5,7 @@ def test_get_page_shows_default_form(client):
     response = client.get("/")
     assert response.status_code == 200
     body = response.get_data(as_text=True)
-    assert "Lab 02: BJT DC Bias Web App" in body
+    assert "Lab 03: BJT DC Bias Web App" in body
     assert 'name="vcc"' in body
     assert 'value="100"' in body
     assert "Calculate" in body
