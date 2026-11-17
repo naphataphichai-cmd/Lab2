@@ -35,6 +35,12 @@ the middle with the entered component values, and the operating point on the
 right. Changing the mode reloads the form with that circuit's fields; the divider
 mode still shows `R1`, `R2`, and `RE` exactly as in Lab 02.
 
+All three modes return the same `model.OperatingPoint` using the Lab 02 field
+names (`vb, ve, vc, vce, ib, ic, ie`), so the comparison and formatting layers
+stay shared; each function also returns the mode's `rb` value and, for the
+divider, `vbb`. Units are fixed by the formatter (volts and A/µA/mA), so every
+mode reports values in the same units.
+
 The divider default example is 12 V, 100 kΩ, 22 kΩ, 2.2 kΩ, 1 kΩ, β = 100,
 VBE = 0.70 V. It gives approximately `IB = 12.3 µA`, `IC = 1.23 mA`, and
 `VCE = 8.052 V` — the same values as Lab 02.
