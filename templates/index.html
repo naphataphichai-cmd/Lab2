@@ -80,43 +80,43 @@
 
         {% if mode == 'divider' %}
         <!-- R1 -->
-        <path class="wire" d="M90,80 V96 L81,104 L99,116 L81,128 L99,140 V160" />
-        <path class="wire" d="M90,160 V250" />
-        <text class="ref" x="78" y="112" text-anchor="end">R1</text>
-        <text class="ref-val" x="78" y="130" text-anchor="end">{{ values.r1 if values else '' }} {{ units.r1 if units else '' }}</text>
+        <path class="wire" d="M90,80 V96 L98,102 L82,114 L98,126 L82,138 L98,150 L90,156" />
+        <path class="wire" d="M90,156 V250" />
+        <text class="ref" x="70" y="112" text-anchor="end">R1</text>
+        <text class="ref-val" x="70" y="130" text-anchor="end">{{ values.r1 if values else '' }} {{ units.r1 if units else '' }}</text>
 
         <!-- base node and R2 -->
         <circle class="node" cx="90" cy="250" r="3.5" />
         <path class="wire" d="M90,250 V280" />
-        <path class="wire" d="M90,280 V296 L81,304 L99,316 L81,328 L99,340 V360" />
-        <path class="wire" d="M90,360 V376" />
+        <path class="wire" d="M90,280 L98,286 L82,298 L98,310 L82,322 L98,334 L90,340" />
+        <path class="wire" d="M90,340 V376" />
         <path class="wire" d="M78,376 H102 M83,382 H97 M88,388 H92" />
-        <text class="ref" x="78" y="312" text-anchor="end">R2</text>
-        <text class="ref-val" x="78" y="330" text-anchor="end">{{ values.r2 if values else '' }} {{ units.r2 if units else '' }}</text>
+        <text class="ref" x="70" y="300" text-anchor="end">R2</text>
+        <text class="ref-val" x="70" y="318" text-anchor="end">{{ values.r2 if values else '' }} {{ units.r2 if units else '' }}</text>
         {% else %}
         <!-- RB from VCC to base -->
-        <path class="wire" d="M90,80 V96 L81,104 L99,116 L81,128 L99,140 V160" />
-        <path class="wire" d="M90,160 V250" />
+        <path class="wire" d="M90,80 V96 L98,102 L82,114 L98,126 L82,138 L98,150 L90,156" />
+        <path class="wire" d="M90,156 V250" />
         <circle class="node" cx="90" cy="250" r="3.5" />
-        <text class="ref" x="78" y="112" text-anchor="end">RB</text>
-        <text class="ref-val" x="78" y="130" text-anchor="end">{{ values.rb if values else '' }} {{ units.rb if units else '' }}</text>
+        <text class="ref" x="70" y="112" text-anchor="end">RB</text>
+        <text class="ref-val" x="70" y="130" text-anchor="end">{{ values.rb if values else '' }} {{ units.rb if units else '' }}</text>
         {% endif %}
 
         <!-- base wire -->
         <path class="wire" d="M90,250 H213" />
 
         <!-- RC -->
-        <path class="wire" d="M240,80 V96 L231,104 L249,116 L231,128 L249,140 V160" />
-        <path class="wire" d="M240,160 V228" />
-        <text class="ref" x="252" y="112">RC</text>
-        <text class="ref-val" x="252" y="130">{{ values.rc if values else '' }} {{ units.rc if units else '' }}</text>
+        <path class="wire" d="M240,80 V96 L248,102 L232,114 L248,126 L232,138 L248,150 L240,156" />
+        <path class="wire" d="M240,156 V228" />
+        <text class="ref" x="262" y="112">RC</text>
+        <text class="ref-val" x="262" y="130">{{ values.rc if values else '' }} {{ units.rc if units else '' }}</text>
 
         <!-- transistor -->
-        <circle class="device" cx="228" cy="250" r="26" />
+        <circle class="device" cx="228" cy="250" r="25.1" />
         <path class="wire" d="M213,236 V264" />
         <path class="wire" d="M213,244 L240,228" />
         <path class="wire" d="M213,256 L240,272" />
-        <polygon class="arrow" points="240,272 231.9,271.9 236,265" />
+        <polygon class="arrow" points="240,272 232.3,271.4 235.8,264.7" />
         <text class="ref" x="262" y="242">Q1</text>
         <text class="ref-val" x="262" y="258">NPN</text>
         <text class="ref-val" x="262" y="274">(β = {{ values.beta if values else '' }})</text>
@@ -128,11 +128,11 @@
         {% else %}
         <!-- RE -->
         <path class="wire" d="M240,272 V300" />
-        <path class="wire" d="M240,300 V316 L231,324 L249,336 L231,348 L249,360 V380" />
-        <path class="wire" d="M240,380 V396" />
+        <path class="wire" d="M240,300 L248,306 L232,318 L248,330 L232,342 L248,354 L240,360" />
+        <path class="wire" d="M240,360 V396" />
         <path class="wire" d="M228,396 H252 M233,402 H247 M238,408 H242" />
-        <text class="ref" x="252" y="338">RE</text>
-        <text class="ref-val" x="252" y="356">{{ values.re if values else '' }} {{ units.re if units else '' }}</text>
+        <text class="ref" x="262" y="318">RE</text>
+        <text class="ref-val" x="262" y="336">{{ values.re if values else '' }} {{ units.re if units else '' }}</text>
         {% endif %}
 
         <text class="ref-val" x="250" y="50">VCC = {{ values.vcc if values else '' }} {{ units.vcc if units else '' }}</text>
