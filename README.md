@@ -32,7 +32,8 @@ the sheet. The app returns:
 
 The page shows the input form on the left, a schematic of the selected circuit in
 the middle with the entered component values, and the operating point on the
-right. Changing the mode reloads the form with that circuit's fields; the divider
+right. Selecting a mode reloads the page immediately with that circuit's fields;
+without JavaScript a "Load circuit" button submits the same form. The divider
 mode still shows `R1`, `R2`, and `RE` exactly as in Lab 02.
 
 All three modes return the same `model.OperatingPoint` using the Lab 02 field
